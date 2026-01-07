@@ -1,0 +1,126 @@
+# OpenAI Platform Contract
+# API Reference: https://platform.openai.com/docs/api-reference
+
+openai:
+  name: OpenAI
+  description: GPT-4, GPT-3.5 Turbo, and other OpenAI models
+  api_endpoint: https://api.openai.com/v1
+  
+  auth:
+    type: bearer
+    header: Authorization
+    format: "Bearer {api_key}"
+    docs: https://platform.openai.com/docs/api-reference/authentication
+  
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: OpenAI-Organization
+      optional: true
+  
+  # Usage Endpoint
+  usage:
+    endpoint: /usage
+    method: GET
+    rate_limit: 3000 requests/minute
+    response_format:
+      object: usage
+      fields:
+        - name: total_tokens
+          type: integer
+          description: Total tokens used this billing period
+        - name: prompt_tokens
+          type: integer
+          description: Prompt tokens used
+        - name: completion_tokens
+          type: integer
+          description: Completion tokens used
+        - name: total_cost
+          type: number
+          description: Total cost in USD
+        - name: period_start
+          type: string
+          format: date-time
+        - name: period_end
+          type: string
+          format: date-time
+  
+  # Alternative: Use subscriptions endpoint
+  subscriptions:
+    endpoint: /models
+    method: GET
+    description: List available models and their quotas
+  
+  # Model-specific quota from models response
+  model_quota:
+    endpoint: /models/{model_id}
+    method: GET
+    response_format:
+      fields:
+        - name: owned_by
+          type: string
+        - name: permission
+          type: array
+        - object: model
+          fields:
+            - name: id
+              type: string
+            - name: created
+              type: integer
+            - name: object
+              type: string
+            - name: owned_by
+              type: string
+  
+  # Rate limit headers to respect
+  rate_limit_headers:
+    - x-ratelimit-limit-requests
+    - x-ratelimit-remaining-requests
+    - x-ratelimit-limit-tokens
+    - x-ratelimit-remaining-tokens
+    - x-ratelimit-reset-requests
+    - x-ratelimit-reset-tokens
+  
+  error_codes:
+    401: "Invalid API key"
+    403: "Organization access denied"
+    429: "Rate limit exceeded"
+    500: "Server error"
+  
+  models:
+    - id: gpt-4
+      display_name: GPT-4 Turbo
+      context_window: 128000
+      pricing:
+        input: 0.01  # per 1K tokens
+        output: 0.03
+    - id: gpt-4-turbo
+      display_name: GPT-4 Turbo with Vision
+      context_window: 128000
+      pricing:
+        input: 0.01
+        output: 0.03
+    - id: gpt-3.5-turbo
+      display_name: GPT-3.5 Turbo
+      context_window: 16385
+      pricing:
+        input: 0.0005
+        output: 0.0015
+    - id: gpt-3.5-turbo-16k
+      display_name: GPT-3.5 Turbo 16K
+      context_window: 16384
+      pricing:
+        input: 0.003
+        output: 0.004
+    - id: gpt-4o
+      display_name: GPT-4o
+      context_window: 128000
+      pricing:
+        input: 0.005
+        output: 0.015
+    - id: gpt-4o-mini
+      display_name: GPT-4o Mini
+      context_window: 128000
+      pricing:
+        input: 0.00015
+        output: 0.0006
