@@ -42,6 +42,12 @@ export function createWindowManager() {
   }
 
   function loadFile(filePath: string) {
+    const devServerUrl = process.env.ELECTRON_RENDERER_URL || process.env.VITE_DEV_SERVER_URL
+    if (devServerUrl) {
+      const url = new URL(filePath, devServerUrl)
+      mainWindow?.loadURL(url.toString())
+      return
+    }
     mainWindow?.loadFile(path.join(process.cwd(), 'dist/renderer', filePath))
   }
 

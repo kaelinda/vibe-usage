@@ -1,35 +1,27 @@
 // @ts-nocheck
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path'
-import fs from 'fs'
 
 export default defineConfig({
   main: {
-    entry: 'src/main/index.ts',
-    vite: {
-      build: {
-        outDir: 'dist/main'
-      }
-    },
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    build: {
+      outDir: 'dist/main'
+    }
   },
   preload: {
-    entry: 'src/preload/index.ts',
-    vite: {
-      build: {
-        outDir: 'dist/preload'
-      }
-    },
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    build: {
+      outDir: 'dist/preload'
+    }
   },
   renderer: {
     root: 'src/renderer',
-    vite: {
-      plugins: [vue()],
-      build: {
-        outDir: 'dist/renderer'
-      }
+    publicDir: '../../public',
+    plugins: [vue()],
+    base: './',
+    build: {
+      outDir: 'dist/renderer'
     }
   }
 })

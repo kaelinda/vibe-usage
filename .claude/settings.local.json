@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /Users/zhouzuosong/Documents/ai/services/vibe-usage/*.md)",
+      "Bash(unzip -t /Users/zhouzuosong/Documents/ai/services/vibe-usage/electron/electron-v39.2.6-darwin-arm64.zip)",
+      "Bash(npm run dev)",
+      "Bash(npm install)",
+      "Bash(npm install electron --save-dev)",
+      "Bash(unzip -q electron/electron-v39.2.6-darwin-arm64.zip -d node_modules/electron/)",
+      "Bash(unzip -o electron/electron-v39.2.6-darwin-arm64.zip -d node_modules/electron/)",
+      "Bash(npx vite build)",
+      "Bash(pgrep -fl \"Electron\")",
+      "Bash(git add README.md)"
+    ]
+  }
+}
