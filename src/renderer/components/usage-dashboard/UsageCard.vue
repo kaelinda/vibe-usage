@@ -5,8 +5,13 @@
         <h4 class="model-name">{{ model.displayName }}</h4>
         <span class="model-id">{{ model.name }}</span>
       </div>
-      <el-tag v-if="isOverLimit" type="danger" size="small">Over Limit</el-tag>
-      <el-tag v-else-if="isNearLimit" type="warning" size="small">Near Limit</el-tag>
+      <div class="model-badges">
+        <el-tag v-if="model.type" :type="modelTypeTagType" size="small" class="type-tag">
+          {{ modelTypeLabel }}
+        </el-tag>
+        <el-tag v-if="isOverLimit" type="danger" size="small">Over Limit</el-tag>
+        <el-tag v-else-if="isNearLimit" type="warning" size="small">Near Limit</el-tag>
+      </div>
     </div>
 
     <div class="usage-stats">
@@ -46,7 +51,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Clock } from '@element-plus/icons-vue'
-import type { ModelConfig, UsageRecord } from '../../../../shared/types'
+import type { ModelConfig, UsageRecord, ModelType } from '../../../../shared/types'
 
 const props = defineProps<{
   model: ModelConfig & { platformName?: string }
@@ -71,6 +76,24 @@ const costClass = computed(() => {
   if (isOverLimit.value) return 'text-danger'
   if (isNearLimit.value) return 'text-warning'
   return ''
+})
+
+const modelTypeTagType = computed(() => {
+  const typeMap: Record<ModelType, string> = {
+    general: 'primary',
+    vision: 'success',
+    thinking: 'warning',
+  }
+  return typeMap[props.model.type || 'general'] || 'info'
+})
+
+const modelTypeLabel = computed(() => {
+  const labelMap: Record<ModelType, string> = {
+    general: 'General',
+    vision: 'Vision',
+    thinking: 'Thinking',
+  }
+  return labelMap[props.model.type || 'general'] || 'General'
 })
 
 function formatNumber(num: number): string {
@@ -124,6 +147,17 @@ function formatTime(timestamp: string): string {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 12px;
+}
+
+.model-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.type-tag {
+  text-transform: capitalize;
 }
 
 .model-name {

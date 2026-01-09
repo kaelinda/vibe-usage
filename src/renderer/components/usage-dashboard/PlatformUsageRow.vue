@@ -64,8 +64,8 @@ const props = defineProps<{
 const isExpanded = ref(false)
 
 const overallStatus = computed(() => {
-  if (platformUsage.overallPercentage >= 100) return 'exception'
-  if (platformUsage.overallPercentage >= 80) return 'warning'
+  if (props.platformUsage.overallPercentage >= 100) return 'exception'
+  if (props.platformUsage.overallPercentage >= 80) return 'warning'
   return undefined
 })
 

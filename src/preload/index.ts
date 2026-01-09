@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { Channel } from '../shared/constants/ipc-channels'
+import type { PlatformConfig, ModelConfig, ModelInfo, UsageRecord, AlertRule, UserPreferences } from '../shared/types'
 
 // Type definitions for the exposed API
 export interface VibeUsageAPI {
@@ -7,6 +8,7 @@ export interface VibeUsageAPI {
   platforms: {
     getAll: () => Promise<PlatformConfig[]>
     getById: (id: string) => Promise<PlatformConfig | null>
+    getModels: (platformId: string) => Promise<ModelInfo[]>
     add: (config: Omit<PlatformConfig, 'createdAt' | 'updatedAt'>) => Promise<PlatformConfig | null>
     update: (id: string, updates: Partial<PlatformConfig>) => Promise<PlatformConfig | null>
     remove: (id: string) => Promise<boolean>
@@ -27,6 +29,7 @@ export interface VibeUsageAPI {
     getHistory: (modelId: string, days: number) => Promise<UsageRecord[]>
     getLatest: (modelId: string) => Promise<UsageRecord | undefined>
     addRecord: (record: Omit<UsageRecord, 'id'>) => Promise<number>
+    forceRefresh: () => Promise<{ totalTokens: number; totalCost: number; platformCount: number }>
   }
 
   // Alert APIs
@@ -43,6 +46,7 @@ export interface VibeUsageAPI {
   preferences: {
     get: () => Promise<UserPreferences>
     update: (prefs: Partial<UserPreferences>) => Promise<UserPreferences | null>
+    setPollingInterval: (intervalMs: number) => Promise<boolean>
   }
 
   // Credential APIs
@@ -57,12 +61,13 @@ export interface VibeUsageAPI {
 }
 
 // Re-export types for renderer process usage
-export type { PlatformConfig, ModelConfig, UsageRecord, AlertRule, UserPreferences }
+export type { PlatformConfig, ModelConfig, ModelInfo, UsageRecord, AlertRule, UserPreferences }
 
 contextBridge.exposeInMainWorld('VibeUsageAPI', {
   platforms: {
     getAll: () => ipcRenderer.invoke(Channel.Platforms.GetAll),
     getById: (id: string) => ipcRenderer.invoke(Channel.Platforms.GetById, id),
+    getModels: (platformId: string) => ipcRenderer.invoke(Channel.Platforms.GetModels, platformId),
     add: (config: Omit<PlatformConfig, 'createdAt' | 'updatedAt'>) =>
       ipcRenderer.invoke(Channel.Platforms.Add, config),
     update: (id: string, updates: Partial<PlatformConfig>) =>
@@ -85,6 +90,7 @@ contextBridge.exposeInMainWorld('VibeUsageAPI', {
     getLatest: (modelId: string) => ipcRenderer.invoke(Channel.Usage.GetLatest, modelId),
     addRecord: (record: Omit<UsageRecord, 'id'>) =>
       ipcRenderer.invoke(Channel.Usage.AddRecord, record),
+    forceRefresh: () => ipcRenderer.invoke(Channel.Usage.ForceRefresh),
   },
   alerts: {
     getAll: () => ipcRenderer.invoke(Channel.Alerts.GetAll),
@@ -100,6 +106,8 @@ contextBridge.exposeInMainWorld('VibeUsageAPI', {
     get: () => ipcRenderer.invoke(Channel.Preferences.Get),
     update: (prefs: Partial<UserPreferences>) =>
       ipcRenderer.invoke(Channel.Preferences.Update, prefs),
+    setPollingInterval: (intervalMs: number) =>
+      ipcRenderer.invoke(Channel.Preferences.SetPollingInterval, intervalMs),
   },
   credentials: {
     get: (platformId: string) => ipcRenderer.invoke(Channel.Credentials.Get, platformId),

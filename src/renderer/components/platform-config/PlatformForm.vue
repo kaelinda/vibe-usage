@@ -55,6 +55,7 @@
           <el-icon><Lock /></el-icon>
         </template>
       </el-input>
+      <div class="form-tip">API key is required to validate and fetch usage</div>
     </el-form-item>
 
     <el-form-item label="Requires Organization ID">
@@ -62,9 +63,19 @@
       <span class="switch-label">Some platforms require org ID for usage tracking</span>
     </el-form-item>
 
+    <el-alert
+      v-if="validationError"
+      type="error"
+      :closable="false"
+      show-icon
+      class="validation-alert"
+    >
+      {{ validationError }}
+    </el-alert>
+
     <div class="form-actions">
       <el-button @click="$emit('cancel')">Cancel</el-button>
-      <el-button type="primary" :loading="loading" @click="handleSubmit">
+      <el-button type="primary" :loading="loading || validating" @click="handleSubmit">
         {{ isEditing ? 'Update Platform' : 'Add Platform' }}
       </el-button>
     </div>
@@ -72,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { Link, Connection, Lock } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { PlatformConfig } from '../../../../shared/types'
@@ -91,6 +102,8 @@ const emit = defineEmits<{
 
 const formRef = ref<FormInstance>()
 const isEditing = computed(() => !!props.platform)
+const validating = ref(false)
+const validationError = ref<string | null>(null)
 
 const form = reactive({
   id: '',
@@ -114,6 +127,9 @@ const rules: FormRules = {
     { required: true, message: 'API endpoint is required', trigger: 'blur' },
     { type: 'url', message: 'Must be a valid URL', trigger: 'blur' },
   ],
+  apiKey: [
+    { required: true, message: 'API key is required', trigger: 'blur' },
+  ],
 }
 
 onMounted(() => {
@@ -130,8 +146,13 @@ onMounted(() => {
 async function handleSubmit() {
   if (!formRef.value) return
 
-  await formRef.value.validate((valid) => {
-    if (valid) {
+  validationError.value = null
+
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    // Skip credential validation for editing mode
+    if (isEditing.value) {
       const config: Partial<PlatformConfig> = {
         id: form.id,
         name: form.name,
@@ -142,13 +163,38 @@ async function handleSubmit() {
           requiresOrg: form.requiresOrg,
         },
       }
+      emit('submit', { config, apiKey: '' })
+      return
+    }
+
+    // Validate credentials before submitting
+    validating.value = true
+    try {
+      const config: Partial<PlatformConfig> = {
+        id: form.id,
+        name: form.name,
+        apiEndpoint: form.apiEndpoint,
+        description: form.description,
+        options: {
+          authType: form.authType,
+          requiresOrg: form.requiresOrg,
+        },
+      }
+
+      // Emit submit event with config - parent component handles credential validation
       emit('submit', { config, apiKey: form.apiKey })
+    } finally {
+      validating.value = false
     }
   })
 }
 </script>
 
 <style scoped>
+.validation-alert {
+  margin-bottom: 16px;
+}
+
 .form-tip {
   font-size: 12px;
   color: #909399;

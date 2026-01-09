@@ -3,6 +3,7 @@ export const Channel = {
   Platforms: {
     GetAll: 'platforms:get-all',
     GetById: 'platforms:get-by-id',
+    GetModels: 'platforms:get-models',
     Add: 'platforms:add',
     Update: 'platforms:update',
     Remove: 'platforms:remove',
@@ -24,6 +25,7 @@ export const Channel = {
     GetHistory: 'usage:get-history',
     GetLatest: 'usage:get-latest',
     AddRecord: 'usage:add-record',
+    ForceRefresh: 'usage:force-refresh',
   },
 
   // Alert channels
@@ -40,6 +42,7 @@ export const Channel = {
   Preferences: {
     Get: 'preferences:get',
     Update: 'preferences:update',
+    SetPollingInterval: 'preferences:set-polling-interval',
   },
 
   // Credential channels

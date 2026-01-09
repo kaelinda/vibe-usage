@@ -8,7 +8,7 @@
         </span>
       </div>
       <div class="header-actions">
-        <el-button :loading="loading" @click="refreshData">
+        <el-button :loading="loading" @click="handleForceRefresh">
           <el-icon><Refresh /></el-icon>
           Refresh
         </el-button>
@@ -81,6 +81,11 @@ async function refreshData() {
     platformsStore.fetchPlatforms(),
     modelsStore.fetchModels(),
   ])
+}
+
+async function handleForceRefresh() {
+  await usageStore.forceRefresh()
+  await refreshData()
 }
 
 onMounted(() => {

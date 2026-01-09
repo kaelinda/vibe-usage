@@ -6,42 +6,59 @@ import { setupIpcHandlers } from './ipc/handlers'
 import { platformRegistry } from './services/platform-registry'
 import { StorageService } from './services/storage-service'
 import { CredentialManager } from './services/credential-manager'
+import { UsagePoller } from './services/usage-poller'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
-const storageService = new StorageService()
-const credentialManager = new CredentialManager()
+async function main() {
+  const storageService = new StorageService()
+  const credentialManager = new CredentialManager()
 
-app.whenReady().then(() => {
-  const windowManager = createWindowManager()
-  mainWindow = windowManager.createMainWindow()
-  windowManager.loadFile('index.html')
+  // Wait for storage to initialize before creating UsagePoller
+  await storageService.waitForInit()
 
-  tray = createTrayManager(mainWindow)
+  // Initialize UsagePoller with all dependencies
+  const usagePoller = new UsagePoller(platformRegistry, storageService, credentialManager)
 
-  setupIpcHandlers({
-    storageService,
-    credentialManager,
-    platformRegistry
+  app.whenReady().then(() => {
+    const windowManager = createWindowManager()
+    mainWindow = windowManager.createMainWindow()
+    windowManager.loadFile('index.html')
+
+    tray = createTrayManager(mainWindow)
+
+    setupIpcHandlers({
+      storageService,
+      credentialManager,
+      platformRegistry,
+      usagePoller
+    })
+
+    // Start usage polling
+    usagePoller.startPolling()
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = windowManager.createMainWindow()
+        windowManager.loadFile('index.html')
+      } else {
+        mainWindow?.show()
+      }
+    })
   })
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = windowManager.createMainWindow()
-      windowManager.loadFile('index.html')
-    } else {
-      mainWindow?.show()
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit()
     }
   })
-})
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+  app.on('before-quit', () => {
+    // Stop polling before quitting
+    usagePoller.stopPolling()
+    tray?.destroy()
+  })
+}
 
-app.on('before-quit', () => {
-  tray?.destroy()
-})
+main()

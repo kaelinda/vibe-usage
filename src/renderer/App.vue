@@ -43,6 +43,7 @@ import { DataAnalysis, Platform, Clock, Setting } from '@element-plus/icons-vue'
 import en from 'element-plus/es/locale/lang/en'
 import PlatformConfig from './components/platform-config/index.vue'
 import DashboardView from './components/usage-dashboard/index.vue'
+import SettingsView from './components/settings/index.vue'
 
 const locale = ref(en)
 const currentView = ref('dashboard')
@@ -76,15 +77,6 @@ const HistoryView = {
     <div class="history-placeholder">
       <h2>Usage History</h2>
       <p>Historical charts and exports coming soon...</p>
-    </div>
-  `
-}
-
-const SettingsView = {
-  template: `
-    <div class="settings-placeholder">
-      <h2>Settings</h2>
-      <p>Application preferences coming soon...</p>
     </div>
   `
 }

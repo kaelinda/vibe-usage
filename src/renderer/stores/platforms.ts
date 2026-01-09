@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { PlatformConfig } from '../../shared/types'
+import type { PlatformConfig, ModelInfo } from '../../shared/types'
 
 export const usePlatformsStore = defineStore('platforms', () => {
   const platforms = ref<PlatformConfig[]>([])
@@ -18,6 +18,15 @@ export const usePlatformsStore = defineStore('platforms', () => {
       error.value = e instanceof Error ? e.message : 'Failed to fetch platforms'
     } finally {
       loading.value = false
+    }
+  }
+
+  async function getModels(platformId: string): Promise<ModelInfo[]> {
+    try {
+      return await window.VibeUsageAPI.platforms.getModels(platformId)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch models'
+      return []
     }
   }
 
@@ -87,6 +96,7 @@ export const usePlatformsStore = defineStore('platforms', () => {
     error,
     platformCount,
     fetchPlatforms,
+    getModels,
     addPlatform,
     updatePlatform,
     removePlatform,

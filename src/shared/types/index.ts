@@ -13,6 +13,17 @@ export interface PlatformConfig {
   updatedAt: string
 }
 
+// Model type enum
+export type ModelType = 'general' | 'vision' | 'thinking'
+
+// Model information from platform API
+export interface ModelInfo {
+  id: string
+  name: string
+  displayName: string
+  type: ModelType
+}
+
 // Model configuration types
 export interface ModelConfig {
   id: string
@@ -21,6 +32,7 @@ export interface ModelConfig {
   displayName: string
   quotaTotal: number
   quotaPeriod?: 'monthly' | 'daily' | 'rolling'
+  type?: ModelType  // User can override model type
   createdAt: string
   updatedAt: string
 }

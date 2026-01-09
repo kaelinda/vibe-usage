@@ -54,6 +54,19 @@ export const useUsageStore = defineStore('usage', () => {
     }
   }
 
+  async function forceRefresh() {
+    loading.value = true
+    error.value = null
+    try {
+      await window.VibeUsageAPI.usage.forceRefresh()
+      lastUpdated.value = new Date()
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to force refresh'
+    } finally {
+      loading.value = false
+    }
+  }
+
   function calculatePlatformUsage(
     platforms: Array<{ id: string; name: string }>,
     models: ModelConfig[]
@@ -134,6 +147,7 @@ export const useUsageStore = defineStore('usage', () => {
     fetchUsageHistory,
     getLatestUsage,
     addUsageRecord,
+    forceRefresh,
     calculatePlatformUsage,
     calculateSummary,
   }

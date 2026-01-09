@@ -1,5 +1,39 @@
 import type { PlatformInterface, PlatformCredentials, UsageResponse } from '../base/platform-interface'
-import type { UsageRecord } from '../../src/shared/types'
+import type { UsageRecord, ModelInfo, ModelType } from '../../src/shared/types'
+
+// OpenAI model list with types
+const OPENAI_MODELS: ModelInfo[] = [
+  // GPT-4 Series (General)
+  { id: 'gpt-4', name: 'gpt-4', displayName: 'GPT-4', type: 'general' },
+  { id: 'gpt-4-turbo', name: 'gpt-4-turbo', displayName: 'GPT-4 Turbo', type: 'general' },
+  { id: 'gpt-4o', name: 'gpt-4o', displayName: 'GPT-4o', type: 'general' },
+  { id: 'gpt-4o-2024-08-06', name: 'gpt-4o-2024-08-06', displayName: 'GPT-4o (2024-08-06)', type: 'general' },
+
+  // GPT-4o with Vision (Vision)
+  { id: 'gpt-4o', name: 'gpt-4o', displayName: 'GPT-4o Vision', type: 'vision' },
+
+  // GPT-3.5 Series (General)
+  { id: 'gpt-3.5-turbo', name: 'gpt-3.5-turbo', displayName: 'GPT-3.5 Turbo', type: 'general' },
+  { id: 'gpt-3.5-turbo-16k', name: 'gpt-3.5-turbo-16k', displayName: 'GPT-3.5 Turbo 16K', type: 'general' },
+
+  // Audio Models (General)
+  { id: 'whisper-1', name: 'whisper-1', displayName: 'Whisper-1', type: 'general' },
+  { id: 'tts-1', name: 'tts-1', displayName: 'TTS-1', type: 'general' },
+  { id: 'tts-1-hd', name: 'tts-1-hd', displayName: 'TTS-1 HD', type: 'general' },
+
+  // Image Generation (Vision)
+  { id: 'dall-e-3', name: 'dall-e-3', displayName: 'DALL-E 3', type: 'vision' },
+  { id: 'dall-e-2', name: 'dall-e-2', displayName: 'DALL-E 2', type: 'vision' },
+
+  // Embeddings (General)
+  { id: 'text-embedding-ada-002', name: 'text-embedding-ada-002', displayName: 'Text Embedding Ada-002', type: 'general' },
+  { id: 'text-embedding-3-small', name: 'text-embedding-3-small', displayName: 'Text Embedding 3 Small', type: 'general' },
+  { id: 'text-embedding-3-large', name: 'text-embedding-3-large', displayName: 'Text Embedding 3 Large', type: 'general' },
+
+  // Moderation (General)
+  { id: 'text-moderation-stable', name: 'text-moderation-stable', displayName: 'Text Moderation Stable', type: 'general' },
+  { id: 'text-moderation-latest', name: 'text-moderation-latest', displayName: 'Text Moderation Latest', type: 'general' },
+]
 
 export class OpenAIPlatform implements PlatformInterface {
   readonly id = 'openai'
@@ -33,13 +67,22 @@ export class OpenAIPlatform implements PlatformInterface {
 
   async fetchUsage(modelId: string): Promise<UsageResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/usage`, {
-        method: 'POST',
+      // Calculate date range for current billing period
+      const now = new Date()
+      const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      const endDate = now
+
+      const params = new URLSearchParams({
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+      })
+
+      const response = await fetch(`${this.baseUrl}/billing/usage?${params}`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ model: modelId }),
       })
 
       if (!response.ok) {
@@ -51,15 +94,22 @@ export class OpenAIPlatform implements PlatformInterface {
 
       const data = await response.json()
 
+      // OpenAI returns cost in USD (from total_usage in cents)
+      const costUSD = (data.total_usage || 0) / 100
+
+      // Estimate tokens from cost using model-specific rates
+      const tokensUsed = this.estimateTokensFromCost(costUSD, modelId)
+
       const usageRecord: UsageRecord = {
         id: 0,
         modelId,
         timestamp: new Date().toISOString(),
-        tokensUsed: data.total_tokens || 0,
+        tokensUsed,
+        costEstimate: costUSD,
         metadata: {
-          promptTokens: data.prompt_tokens,
-          completionTokens: data.completion_tokens,
-          apiCalls: 1,
+          promptTokens: undefined, // Billing API doesn't provide breakdown
+          completionTokens: undefined,
+          apiCalls: undefined,
         },
       }
 
@@ -72,17 +122,58 @@ export class OpenAIPlatform implements PlatformInterface {
     }
   }
 
+  /**
+   * Estimate token count from cost (USD)
+   * Uses approximate pricing rates for different models
+   */
+  private estimateTokensFromCost(costUSD: number, modelId: string): number {
+    // Approximate pricing (USD per 1K tokens) as of 2024
+    const rates: Record<string, number> = {
+      // GPT-4 series
+      'gpt-4': 0.06,
+      'gpt-4-turbo': 0.03,
+      'gpt-4o': 0.015,
+      'gpt-4o-2024-08-06': 0.015,
+
+      // GPT-3.5 series
+      'gpt-3.5-turbo': 0.0015,
+      'gpt-3.5-turbo-16k': 0.003,
+
+      // Audio models (per minute)
+      'whisper-1': 0.006,
+      'tts-1': 0.015,
+      'tts-1-hd': 0.030,
+
+      // Image generation (per image)
+      'dall-e-3': 0.040,
+      'dall-e-2': 0.016,
+
+      // Embeddings
+      'text-embedding-ada-002': 0.0001,
+      'text-embedding-3-small': 0.00002,
+      'text-embedding-3-large': 0.00013,
+
+      // Moderation
+      'text-moderation-stable': 0.00004,
+      'text-moderation-latest': 0.00004,
+    }
+
+    // Default rate for unknown models (average)
+    const defaultRate = 0.03
+
+    // Get rate for model, fall back to default
+    const rate = rates[modelId.toLowerCase()] || defaultRate
+
+    // Calculate tokens: cost (USD) / rate (USD per token)
+    return Math.round((costUSD * 1000) / rate)
+  }
+
   async getModels(): Promise<string[]> {
-    return [
-      'gpt-4',
-      'gpt-4-turbo',
-      'gpt-4o',
-      'gpt-3.5-turbo',
-      'gpt-3.5-turbo-16k',
-      'dall-e-3',
-      'tts-1',
-      'whisper-1',
-    ]
+    return OPENAI_MODELS.map(m => m.id)
+  }
+
+  async getModelsWithTypes(): Promise<ModelInfo[]> {
+    return OPENAI_MODELS
   }
 
   dispose(): void {

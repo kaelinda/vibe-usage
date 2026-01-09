@@ -17,6 +17,7 @@
       @configure="handleConfigure"
     />
 
+    <!-- Platform Add/Edit Dialog -->
     <el-dialog
       v-model="dialogVisible"
       :title="editingPlatform ? 'Edit Platform' : 'Add Platform'"
@@ -30,6 +31,21 @@
         @cancel="closeDialog"
       />
     </el-dialog>
+
+    <!-- Model Configuration Dialog -->
+    <el-dialog
+      v-model="modelDialogVisible"
+      :title="configuringPlatform ? `${configuringPlatform.name} - Models` : 'Model Configuration'"
+      width="700px"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <ModelList
+        v-if="configuringPlatform"
+        :platform="configuringPlatform"
+        @close="closeModelDialog"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -38,6 +54,7 @@ import { ref, computed, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import PlatformList from './PlatformList.vue'
 import PlatformForm from './PlatformForm.vue'
+import ModelList from './ModelList.vue'
 import { usePlatformsStore } from '../../stores/platforms'
 import { useModelsStore } from '../../stores/models'
 import type { PlatformConfig } from '../../../../shared/types'
@@ -51,6 +68,8 @@ const submitting = computed(() => platformsStore.loading)
 
 const dialogVisible = ref(false)
 const editingPlatform = ref<PlatformConfig | null>(null)
+const modelDialogVisible = ref(false)
+const configuringPlatform = ref<PlatformConfig | null>(null)
 
 const modelCounts = computed(() => {
   const counts: Record<string, number> = {}
@@ -78,7 +97,15 @@ function handleEdit(platform: PlatformConfig) {
 }
 
 function handleConfigure(platform: PlatformConfig) {
-  console.log('Configure models for:', platform.id)
+  configuringPlatform.value = platform
+  modelDialogVisible.value = true
+}
+
+function closeModelDialog() {
+  modelDialogVisible.value = false
+  configuringPlatform.value = null
+  // Refresh model counts
+  modelsStore.fetchModels()
 }
 
 async function handleSubmit(data: { config: Partial<PlatformConfig>; apiKey: string }) {

@@ -10,7 +10,25 @@
       "Bash(unzip -o electron/electron-v39.2.6-darwin-arm64.zip -d node_modules/electron/)",
       "Bash(npx vite build)",
       "Bash(pgrep -fl \"Electron\")",
-      "Bash(git add README.md)"
+      "Bash(git add README.md)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: 添加 README.md 项目说明文档\n\n- 添加项目介绍、功能特性、安装说明\n- 包含使用指南、开发文档、贡献说明\n- 添加项目结构和技术栈说明\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(openspec list)",
+      "Bash(openspec list --specs)",
+      "Bash(mkdir -p /Users/zhouzuosong/Documents/ai/services/vibe-usage/openspec/changes/add-platform-support)",
+      "Bash(openspec validate add-platform-support --strict)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run build)",
+      "Bash(npm run test)",
+      "Bash(openspec archive add-platform-support --yes)",
+      "Bash(openspec validate --strict)",
+      "Bash(openspec validate fetch-platform-models --strict)",
+      "Bash(npx vue-tsc --noEmit)",
+      "Bash(npm run lint)",
+      "Bash(npx eslint . --ext .ts,.vue,.js --max-warnings 0)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(openspec validate implement-usage-polling --strict)",
+      "Bash(cat /tmp/claude/-Users-zhouzuosong-Documents-ai-services-vibe-usage/tasks/b39b3d0.output)",
+      "Bash(git add -A)"
     ]
   }
 }

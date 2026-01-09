@@ -4,15 +4,18 @@ import { Channel } from '../../shared/constants/ipc-channels'
 import type { StorageService } from '../services/storage-service'
 import type { CredentialManager } from '../services/credential-manager'
 import type { PlatformRegistry } from '../services/platform-registry'
+import type { UsagePoller } from '../services/usage-poller'
+import type { UsageRecord } from '../../shared/types'
 
 interface Services {
   storageService: StorageService
   credentialManager: CredentialManager
   platformRegistry: PlatformRegistry
+  usagePoller?: UsagePoller
 }
 
 export function setupIpcHandlers(services: Services) {
-  const { storageService, credentialManager, platformRegistry } = services
+  const { storageService, credentialManager, platformRegistry, usagePoller } = services
 
   // Platform handlers
   ipcMain.handle(Channel.Platforms.GetAll, async () => {
@@ -21,6 +24,20 @@ export function setupIpcHandlers(services: Services) {
 
   ipcMain.handle(Channel.Platforms.GetById, async (_: unknown, id: string) => {
     return storageService.getPlatformById(id) ?? null
+  })
+
+  ipcMain.handle(Channel.Platforms.GetModels, async (_: unknown, platformId: string) => {
+    const platform = storageService.getPlatformById(platformId)
+    if (!platform) {
+      return []
+    }
+
+    const apiKey = await credentialManager.getPassword(platformId)
+    if (!apiKey) {
+      return []
+    }
+
+    return platformRegistry.getModelsWithTypes(platform, apiKey)
   })
 
   ipcMain.handle(Channel.Platforms.Add, async (_: unknown, config) => {
@@ -41,6 +58,52 @@ export function setupIpcHandlers(services: Services) {
       await credentialManager.deletePassword(id)
     }
     return result
+  })
+
+  ipcMain.handle(Channel.Platforms.FetchUsage, async (_: unknown, platformId: string, modelId: string) => {
+    const platform = storageService.getPlatformById(platformId)
+    if (!platform) {
+      return { success: false, error: 'Platform not found' }
+    }
+
+    const apiKey = await credentialManager.getPassword(platformId)
+    if (!apiKey) {
+      return { success: false, error: 'API key not found' }
+    }
+
+    const client = platformRegistry.getClient(platformId, apiKey)
+    if (!client) {
+      return { success: false, error: 'Platform client not available' }
+    }
+
+    try {
+      const result = await client.getUsage()
+
+      // Save usage record to storage
+      const usageRecord: Omit<UsageRecord, 'id'> = {
+        modelId,
+        timestamp: new Date().toISOString(),
+        tokensUsed: result.tokensUsed,
+        tokensRemaining: result.tokensRemaining,
+        quotaTotal: result.quotaTotal,
+        costEstimate: result.costEstimate,
+      }
+
+      const recordId = storageService.addUsageRecord(usageRecord)
+
+      return {
+        success: true,
+        data: {
+          id: recordId,
+          ...usageRecord,
+        },
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }
+    }
   })
 
   // Model handlers
@@ -79,6 +142,21 @@ export function setupIpcHandlers(services: Services) {
 
   ipcMain.handle(Channel.Usage.AddRecord, async (_: unknown, record) => {
     return storageService.addUsageRecord(record)
+  })
+
+  ipcMain.handle(Channel.Usage.ForceRefresh, async () => {
+    if (!usagePoller) {
+      return { totalTokens: 0, totalCost: 0, platformCount: 0 }
+    }
+    return usagePoller.forceRefresh()
+  })
+
+  ipcMain.handle(Channel.Preferences.SetPollingInterval, async (_: unknown, intervalMs: number) => {
+    if (!usagePoller) {
+      return false
+    }
+    usagePoller.setInterval(intervalMs)
+    return true
   })
 
   // Alert handlers

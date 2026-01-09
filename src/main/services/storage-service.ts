@@ -77,10 +77,17 @@ interface UserPreferences {
 export class StorageService {
   private db: Database | null = null
   private dbPath: string
+  private initialized: boolean = false
+  private initPromise: Promise<void> | null = null
 
   constructor() {
     this.dbPath = path.join(process.cwd(), 'vibe-usage.db')
-    this.initDatabase()
+    this.initPromise = this.initDatabase()
+  }
+
+  async waitForInit(): Promise<void> {
+    if (this.initialized) return
+    if (this.initPromise) await this.initPromise
   }
 
   private async initDatabase() {
@@ -99,6 +106,7 @@ export class StorageService {
     }
 
     this.initializeSchema()
+    this.initialized = true
   }
 
   private saveToFile() {
