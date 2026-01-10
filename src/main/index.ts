@@ -21,6 +21,11 @@ async function main() {
   // Initialize UsagePoller with all dependencies
   const usagePoller = new UsagePoller(platformRegistry, storageService, credentialManager)
 
+  // Read polling settings from preferences and apply to UsagePoller
+  const prefs = storageService.getUserPreferences()
+  const pollingInterval = prefs.refreshInterval * 1000 // Convert seconds to milliseconds
+  usagePoller.setInterval(pollingInterval)
+
   app.whenReady().then(() => {
     const windowManager = createWindowManager()
     mainWindow = windowManager.createMainWindow()

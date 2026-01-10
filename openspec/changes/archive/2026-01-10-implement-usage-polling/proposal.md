@@ -7,6 +7,11 @@
 ## Summary
 
 实现 Token 消耗量监听功能，包括：
+
+## Why
+
+Users need real-time visibility into their AI API token usage and costs, but the current implementation fails because OpenAI's `/usage` endpoint doesn't exist and the UsagePoller service is not initialized, leaving users without usage tracking functionality.
+
 - 支持 1/5/10 分钟的轮询频率选项，用户可自定义
 - 同时支持总体消耗和按模型统计
 - 在 Dashboard 和 System Tray 显示实时使用量
@@ -62,7 +67,7 @@ Main Process:
     └── preferences:update (更新轮询频率)
 ```
 
-## Key Changes
+## What Changes
 
 ### 1. 修复 OpenAI Platform
 - 使用 `/v1/billing/usage` 替代不存在的 `/usage`

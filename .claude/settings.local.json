@@ -28,7 +28,21 @@
       "Bash(npx tsc --noEmit)",
       "Bash(openspec validate implement-usage-polling --strict)",
       "Bash(cat /tmp/claude/-Users-zhouzuosong-Documents-ai-services-vibe-usage/tasks/b39b3d0.output)",
-      "Bash(git add -A)"
+      "Bash(git add -A)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\n✨ feat\\(usage\\): 实现 Token 使用量自动轮询功能\n\n添加 Token 使用量自动轮询服务，支持可配置的轮询间隔和手动刷新。\n\n主要变更：\n- 新增 UsagePoller 服务，支持 1/5/10/15/30 分钟预设 + 自定义间隔\n- 修复 OpenAI Billing API 调用，使用 /v1/billing/usage 端点\n- 添加 ForceRefresh 和 SetPollingInterval IPC 处理器\n- 新建设置页面 \\(Settings\\)，支持配置轮询间隔和手动刷新\n- 添加 ModelInfo 类型和 ModelType 枚举用于模型分类\n- 更新 StorageService 异步初始化，解决数据库时序问题\n- Dashboard Refresh 按钮调用 forceRefresh API\n\n功能特性：\n- 自动轮询：默认 5 分钟间隔自动获取使用量\n- 手动刷新：点击 Refresh 按钮立即获取最新数据\n- 设置页面：可修改轮询间隔，间隔设置持久化到 localStorage\n- 前端 API：新增 forceRefresh 和 setPollingInterval 方法\n\n涉及文件：\n- src/main/services/usage-poller.ts \\(轮询服务\\)\n- src/main/ipc/handlers.ts \\(IPC 处理器\\)\n- src/renderer/components/settings/index.vue \\(设置页面\\)\n- src/renderer/stores/usage.ts \\(store 更新\\)\n- platforms/openai/openai-platform.ts \\(API 修复\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(openspec show implement-usage-polling)",
+      "Bash(cat changes/implement-usage-polling/proposal.md)",
+      "Bash(cat changes/implement-usage-polling/tasks.md)",
+      "Bash(cat /Users/zhouzuosong/Documents/ai/services/vibe-usage/changes/implement-usage-polling/proposal.md)",
+      "Bash(openspec show implement-usage-polling --json)",
+      "Bash(openspec show fetch-platform-models --json)",
+      "Bash(openspec apply implement-usage-polling)",
+      "Bash(openspec archive implement-usage-polling --yes)",
+      "Bash(openspec show implement-usage-polling --json --deltas-only)",
+      "Bash(python3 -c \"\nimport json, sys\ndata = json.load\\(sys.stdin\\)\nfor delta in data.get\\(''deltas'', []\\):\n    if delta.get\\(''operation''\\) == ''MODIFIED'':\n        print\\(f\"\"Spec: {delta.get\\(''spec''\\)}\"\"\\)\n        print\\(f\"\"Description: {delta.get\\(''description''\\)}\"\"\\)\n\")",
+      "Bash(openspec archive implement-usage-polling --yes --skip-specs)",
+      "Bash(openspec archive fetch-platform-models --yes)",
+      "Bash(openspec archive fetch-platform-models --yes --skip-specs)"
     ]
   }
 }

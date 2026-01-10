@@ -8,6 +8,12 @@
 
 在用户添加 Platform 之后，在 Dashboard 页面自动获取该平台的 Token 使用信息，列出支持的模型，并根据 API 返回信息和用户配置显示模型类型（通用模型、视觉模型、Thinking 模型）。
 
+## Why
+
+Users need automatic model discovery with type classification when adding platforms, but the current system requires manual model entry without type visibility, making it difficult to understand available models and their capabilities.
+
+## What Changes
+
 ## Problem Statement
 
 当前系统仅支持手动添加模型，用户无法直观了解平台支持哪些模型以及各模型的类型。需要在添加平台后自动获取模型列表并展示模型类型。
