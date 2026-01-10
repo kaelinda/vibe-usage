@@ -3,21 +3,39 @@
 AI Token Usage Monitor - 实时监控跨平台的 AI API token 使用情况。
 
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
-![Electron](https://img.shields.io/badge/Electron-39.2.6-blue)
-![Vue](https://img.shields.io/badge/Vue-3.4-green)
+![Electron](https://img.shields.io/badge/Electron-33.2.1-blue)
+![Vue](https://img.shields.io/badge/Vue-3.5-green)
 
 ## 简介
 
-VibeUsage 是一个桌面应用程序，帮助你实时监控和管理 AI API（OpenAI、Anthropic 等）的 token 使用情况。通过系统托盘集成、实时轮询和阈值告警，让你轻松掌控 API 消耗。
+VibeUsage 是一个桌面应用程序，帮助你实时监控和管理 AI API（OpenAI、Anthropic 等）的 token 使用情况。通过系统托盘集成、自动轮询、模型类型分类和阈值告警，让你轻松掌控 API 消耗。
 
 ## 功能特性
 
+### 核心功能
 - **多平台支持**：监控 OpenAI、Anthropic 等主流 AI 提供商的 API 使用
+- **自动轮询**：可配置轮询间隔（1/5/10/15/30 分钟或自定义），自动获取最新使用数据
+- **模型类型分类**：自动识别模型类型（General/Vision/Thinking），并在仪表盘显示
+- **模型自动发现**：添加平台后自动获取可用模型列表
 - **系统托盘集成**：最小化到托盘，后台持续监控
-- **实时轮询**：自动获取最新使用数据
 - **阈值告警**：设置使用上限，超限时自动提醒
 - **数据可视化**：图表展示使用趋势和统计分析
 - **安全存储**：API 密钥使用系统级安全存储（Keychain/Windows Credential Manager）
+
+### 最新更新
+
+#### Token 使用量轮询
+- 支持 1/5/10/15/30 分钟的轮询频率预设
+- 支持自定义轮询间隔（1-1440 分钟）
+- 在设置页面实时配置轮询参数
+- 手动刷新功能，立即获取最新数据
+
+#### 模型类型检测
+- **General（通用）**：标准语言模型，如 GPT-4、Claude 3 Opus
+- **Vision（视觉）**：支持图像处理的模型，如 GPT-4o、Claude 3.5 Sonnet
+- **Thinking（推理）**：强化推理模型，如 o1 系列
+- 自动从 API 获取模型列表并分类
+- 支持用户手动覆盖模型类型
 
 ## 截图
 
@@ -59,7 +77,18 @@ sudo apt install ./vibe-usage_*.deb
 2. 点击「添加平台」
 3. 选择 AI 提供商（OpenAI / Anthropic 等）
 4. 输入 API Key（安全存储在系统凭证管理器中）
-5. 选择要监控的模型
+5. 从自动获取的模型列表中选择要监控的模型
+6. （可选）手动设置模型类型和月度配额
+
+### 配置轮询设置
+
+1. 进入「设置」→「Usage Polling」
+2. 选择轮询间隔：
+   - 1 分钟：高频更新，适合开发测试
+   - 5 分钟：推荐设置
+   - 10/15/30 分钟：降低 API 调用频率
+3. 或输入自定义分钟数（1-1440）
+4. 点击「应用」保存设置
 
 ### 设置告警阈值
 
@@ -70,9 +99,14 @@ sudo apt install ./vibe-usage_*.deb
 
 ### 查看使用数据
 
-- **仪表盘**：查看当前月份的总体使用情况
+- **仪表盘**：查看所有平台的总体使用情况
+  - 总 token 消耗
+  - 总成本估算
+  - 各平台使用占比
+  - 模型类型分类显示
 - **使用历史**：按日/周/月查看历史数据
-- **成本估算**：根据各平台定价计算预估费用
+- **进度条**：直观显示配额使用百分比
+- **类型标签**：彩色标签标识模型类型
 
 ## 开发
 
@@ -113,9 +147,9 @@ npm run preview
 
 # 创建安装包
 npm run make           # 所有平台
-npm run make:mac       # macOS
-npm run make:win       # Windows
-npm run make:linux     # Linux
+npm run make:mac       # macOS DMG
+npm run make:win       # Windows 安装程序
+npm run make:linux     # Linux DEB
 
 # 测试
 npm run test           # 运行所有测试
@@ -135,27 +169,48 @@ npm run typecheck      # TypeScript 类型检查
 vibe-usage/
 ├── src/
 │   ├── main/           # Electron 主进程
-│   │   ├── index.ts        # 应用入口
+│   │   ├── index.ts        # 应用入口（初始化 UsagePoller）
 │   │   ├── window-manager.ts  # 窗口管理
 │   │   ├── tray-manager.ts    # 托盘管理
 │   │   ├── ipc/
-│   │   │   └── handlers.ts    # IPC 处理器
+│   │   │   └── handlers.ts    # IPC 处理器（轮询、模型获取）
 │   │   └── services/
 │   │       ├── storage-service.ts    # SQLite 存储
 │   │       ├── credential-manager.ts  # 密钥管理
-│   │       ├── platform-registry.ts   # 平台插件
+│   │       ├── platform-registry.ts   # 平台插件注册
 │   │       ├── usage-poller.ts        # 轮询服务
 │   │       └── alert-manager.ts       # 告警管理
 │   ├── preload/        # 预加载脚本
-│   │   └── index.ts
+│   │   └── index.ts        # Context Bridge API 暴露
 │   ├── renderer/       # Vue 渲染进程
 │   │   ├── stores/         # Pinia 状态管理
+│   │   │   ├── usage.ts        # 使用量状态
+│   │   │   ├── platforms.ts    # 平台状态
+│   │   │   └── preferences.ts  # 偏好设置
 │   │   ├── components/     # Vue 组件
+│   │   │   ├── usage-dashboard/    # 使用量仪表盘
+│   │   │   │   ├── index.vue       # 主仪表盘
+│   │   │   │   ├── UsageCard.vue   # 使用量卡片（含类型标签）
+│   │   │   │   └── DashboardSummary.vue
+│   │   │   ├── platform-config/     # 平台配置
+│   │   │   │   └── ModelForm.vue    # 模型表单（含类型选择）
+│   │   │   └── settings/            # 设置页面
+│   │   │       └── index.vue        # 轮询设置 UI
 │   │   ├── composables/    # 组合式函数
 │   │   └── main.ts
 │   └── shared/         # 共享代码
-│       ├── constants/      # 常量定义
-│       └── types/          # TypeScript 类型
+│       ├── constants/ipc-channels.ts  # IPC 通道定义
+│       └── types/index.ts             # TypeScript 类型
+│           ├── ModelType              # 模型类型枚举
+│           ├── ModelInfo              # 模型信息接口
+│           └── ModelConfig            # 模型配置
+├── platforms/             # 平台客户端
+│   ├── base/
+│   │   └── platform-interface.ts     # 平台接口定义
+│   ├── openai/
+│   │   └── openai-platform.ts        # OpenAI 实现（含模型类型）
+│   └── anthropic/
+│       └── anthropic-platform.ts     # Anthropic 实现
 ├── electron.vite.config.ts
 ├── package.json
 └── README.md
@@ -166,22 +221,62 @@ vibe-usage/
 VibeUsage 采用插件化架构，支持扩展新的 AI 平台：
 
 1. 创建平台客户端类，实现 `PlatformClient` 接口
-2. 在 `platform-registry.ts` 中注册
-3. 添加到前端平台选择 UI
+2. 实现 `getModelsWithTypes()` 方法返回带类型的模型列表
+3. 在 `platform-registry.ts` 中注册
+4. 添加到前端平台选择 UI
 
 ```typescript
 // 示例：自定义平台客户端
+import type { ModelInfo } from './types'
+
 class MyPlatformClient implements PlatformClient {
   async getUsage(apiKey: string): Promise<UsageData> {
     // 实现获取使用量的逻辑
   }
+
+  async getModelsWithTypes(): Promise<ModelInfo[]> {
+    // 返回带类型信息的模型列表
+    return [
+      { id: 'model-1', name: 'Model 1', displayName: 'Model 1', type: 'general' },
+      { id: 'model-2', name: 'Model 2', displayName: 'Model 2', type: 'vision' },
+    ]
+  }
 }
+```
+
+### 架构设计
+
+#### 轮询架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Main Process                                                │
+│                                                             │
+│  ┌──────────────┐     ┌──────────────┐     ┌────────────┐ │
+│  │ UsagePoller   │────▶│ PlatformClient│────▶│ API        │ │
+│  │              │     │              │     │            │ │
+│  │ interval:    │     │ OpenAI       │     │ OpenAI     │ │
+│  │ configurable │     │ Anthropic    │     │ Anthropic  │ │
+│  └──────────────┘     └──────────────┘     └────────────┘ │
+│         │                                              │    │
+│         │ credentials                                   │    │
+│         ▼                                              │    │
+│  ┌──────────────┐                                       │    │
+│  │CredentialMgr │                                       │    │
+│  └──────────────┘                                       │    │
+│         │                                              │    │
+│         │ usage records                                │    │
+│         ▼                                              │    │
+│  ┌──────────────┐                                       │    │
+│  │StorageSvc    │                                       │    │
+│  └──────────────┘                                       │    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## 技术栈
 
 - **Electron** - 跨平台桌面应用框架
-- **Vue 3** - 前端框架
+- **Vue 3** - 前端框架（Composition API）
 - **Vite** - 构建工具
 - **TypeScript** - 类型安全
 - **Pinia** - 状态管理
